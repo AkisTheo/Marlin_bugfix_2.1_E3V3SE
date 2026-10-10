@@ -292,6 +292,10 @@ typedef struct SettingsDataStruct {
     xyz_pos_t probe_offset;                             // M851 X Y Z
   #endif
 
+  #if HAS_LEVELING_TEMP_EDIT
+    Temperature::leveling_temp_t leveling_temp;         // thermalManager.leveling_temp
+  #endif
+
   //
   // ABL_PLANAR
   //
@@ -300,13 +304,15 @@ typedef struct SettingsDataStruct {
   //
   // AUTO_BED_LEVELING_BILINEAR
   //
-  uint8_t grid_max_x, grid_max_y;                       // GRID_MAX_POINTS_X, GRID_MAX_POINTS_Y
-  uint16_t grid_check;                                  // Hash to check against X/Y
-  xy_pos_t bilinear_grid_spacing, bilinear_start;       // G29 L F
-  #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
-    bed_mesh_t z_values;                                // G29
-  #else
-    float z_values[3][3];
+  #if HAS_MESH_STORAGE
+    uint8_t grid_max_x, grid_max_y;                     // GRID_MAX_POINTS_X, GRID_MAX_POINTS_Y
+    uint16_t grid_check;                                // Hash to check against X/Y
+    xy_pos_t bilinear_grid_spacing, bilinear_start;     // G29 L F
+    #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+      bed_mesh_t z_values;                              // G29
+    #else
+      float z_values[3][3];
+    #endif
   #endif
 
   //
@@ -321,8 +327,10 @@ typedef struct SettingsDataStruct {
   //
   // AUTO_BED_LEVELING_UBL
   //
-  bool planner_leveling_active;                         // M420 S  planner.leveling_active
-  int8_t ubl_storage_slot;                              // bedlevel.storage_slot
+  #if HAS_MESH_STORAGE
+    bool planner_leveling_active;                       // M420 S  planner.leveling_active
+    int8_t ubl_storage_slot;                            // bedlevel.storage_slot
+  #endif
 
   //
   // SERVO_ANGLES
@@ -782,7 +790,9 @@ void MarlinSettings::postprocess() {
 
   TERN_(ENABLE_LEVELING_FADE_HEIGHT, set_z_fade_height(new_z_fade_height, false)); // false = no report
 
-  TERN_(AUTO_BED_LEVELING_BILINEAR, bedlevel.refresh_bed_level());
+  #if ALL(AUTO_BED_LEVELING_BILINEAR, HAS_MESH_STORAGE)
+    bedlevel.refresh_bed_level();
+  #endif
 
   TERN_(HAS_MOTOR_CURRENT_PWM, stepper.refresh_motor_power());
 
@@ -1099,6 +1109,14 @@ void MarlinSettings::postprocess() {
     #endif
 
     //
+    // Leveling preheat temperatures
+    //
+    #if HAS_LEVELING_TEMP_EDIT
+      _FIELD_TEST(leveling_temp);
+      EEPROM_WRITE(thermalManager.leveling_temp);
+    #endif
+
+    //
     // Planar Bed Leveling matrix
     //
     {
@@ -1113,6 +1131,7 @@ void MarlinSettings::postprocess() {
     //
     // Bilinear Auto Bed Leveling
     //
+    #if HAS_MESH_STORAGE
     {
       #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
         static_assert(
@@ -1146,6 +1165,7 @@ void MarlinSettings::postprocess() {
         for (uint16_t q = grid_max_x * grid_max_y; q--;) EEPROM_WRITE(dummyf);
       #endif
     }
+    #endif // HAS_MESH_STORAGE
 
     //
     // X Axis Twist Compensation
@@ -1160,6 +1180,7 @@ void MarlinSettings::postprocess() {
     //
     // Unified Bed Leveling
     //
+    #if HAS_MESH_STORAGE
     {
       _FIELD_TEST(planner_leveling_active);
       const bool ubl_active = TERN(AUTO_BED_LEVELING_UBL, planner.leveling_active, false);
@@ -1167,6 +1188,7 @@ void MarlinSettings::postprocess() {
       EEPROM_WRITE(ubl_active);
       EEPROM_WRITE(storage_slot);
     }
+    #endif
 
     //
     // Servo Angles
@@ -2215,6 +2237,14 @@ void MarlinSettings::postprocess() {
       #endif
 
       //
+      // Leveling preheat temperatures
+      //
+      #if HAS_LEVELING_TEMP_EDIT
+        _FIELD_TEST(leveling_temp);
+        EEPROM_READ(thermalManager.leveling_temp);
+      #endif
+
+      //
       // Planar Bed Leveling matrix
       //
       {
@@ -2228,6 +2258,7 @@ void MarlinSettings::postprocess() {
       //
       // Bilinear Auto Bed Leveling
       //
+      #if HAS_MESH_STORAGE
       {
         uint8_t grid_max_x, grid_max_y;
         EEPROM_READ_ALWAYS(grid_max_x);                // 1 byte
@@ -2261,6 +2292,7 @@ void MarlinSettings::postprocess() {
             for (uint16_t q = grid_max_x * grid_max_y; q--;) EEPROM_READ(dummyf);
           }
       }
+      #endif // HAS_MESH_STORAGE
 
       //
       // X Axis Twist Compensation
@@ -2275,6 +2307,7 @@ void MarlinSettings::postprocess() {
       //
       // Unified Bed Leveling active state
       //
+      #if HAS_MESH_STORAGE
       {
         _FIELD_TEST(planner_leveling_active);
         #if ENABLED(AUTO_BED_LEVELING_UBL)
@@ -2284,9 +2317,11 @@ void MarlinSettings::postprocess() {
           bool planner_leveling_active;
           int8_t ubl_storage_slot;
         #endif
+
         EEPROM_READ(planner_leveling_active);
         EEPROM_READ(ubl_storage_slot);
       }
+      #endif
 
       //
       // SERVO_ANGLES
@@ -3182,9 +3217,11 @@ void MarlinSettings::postprocess() {
             bedlevel.reset();
           }
 
-          if (bedlevel.storage_slot >= 0) {
-            load_mesh(bedlevel.storage_slot);
-            DEBUG_ECHOLNPGM("Mesh ", bedlevel.storage_slot, " loaded from storage.");
+          if (TERN0(HAS_MESH_STORAGE, bedlevel.storage_slot >= 0)) {
+            #if HAS_MESH_STORAGE
+              load_mesh(bedlevel.storage_slot);
+              DEBUG_ECHOLNPGM("Mesh ", bedlevel.storage_slot, " loaded from storage.");
+            #endif
           }
           else {
             bedlevel.reset();
@@ -3286,7 +3323,7 @@ void MarlinSettings::postprocess() {
     return false;
   }
 
-  #if ENABLED(AUTO_BED_LEVELING_UBL)
+  #if ALL(AUTO_BED_LEVELING_UBL, HAS_MESH_STORAGE)
 
     inline void ubl_invalid_slot(const int s) {
       DEBUG_ECHOLNPGM("?Invalid slot.\n", s, " mesh slots available.");
@@ -3307,7 +3344,7 @@ void MarlinSettings::postprocess() {
     #define MESH_STORE_SIZE sizeof(TERN(OPTIMIZED_MESH_STORAGE, mesh_store_t, bedlevel.z_values))
 
     uint16_t MarlinSettings::calc_num_meshes() {
-      return (meshes_end - meshes_start_index()) / MESH_STORE_SIZE;
+      return _MIN(uint16_t(MAX_SAVED_MESHES), uint16_t((meshes_end - meshes_start_index()) / MESH_STORE_SIZE));
     }
 
     int MarlinSettings::mesh_slot_offset(const int8_t slot) {
@@ -3410,7 +3447,7 @@ void MarlinSettings::postprocess() {
     //void MarlinSettings::delete_mesh() { return; }
     //void MarlinSettings::defrag_meshes() { return; }
 
-  #endif // AUTO_BED_LEVELING_UBL
+  #endif // AUTO_BED_LEVELING_UBL && HAS_MESH_STORAGE
 
 #else // !EEPROM_SETTINGS
 
@@ -3628,6 +3665,11 @@ void MarlinSettings::reset() {
       probe.offset.set(NUM_AXIS_LIST(0, 0, dpo[Z_AXIS], 0, 0, 0, 0, 0, 0));
     #endif
   #endif
+
+  //
+  // Leveling preheat temperatures
+  //
+  TERN_(HAS_LEVELING_TEMP_EDIT, thermalManager.reset_leveling_temp());
 
   //
   // Z Stepper Auto-alignment points
@@ -4093,8 +4135,10 @@ void MarlinSettings::reset() {
         if (!forReplay) {
           SERIAL_EOL();
           bedlevel.report_state();
-          SERIAL_ECHO_MSG("Active Mesh Slot ", bedlevel.storage_slot);
-          SERIAL_ECHO_MSG("EEPROM can hold ", calc_num_meshes(), " meshes.\n");
+          #if HAS_MESH_STORAGE
+            SERIAL_ECHO_MSG("Active Mesh Slot ", bedlevel.storage_slot);
+            SERIAL_ECHO_MSG("EEPROM can hold ", calc_num_meshes(), " meshes.\n");
+          #endif
         }
 
        //bedlevel.report_current_mesh();   // This is too verbose for large meshes. A better (more terse)

@@ -218,7 +218,7 @@ int16_t Motion::feedrate_percentage = 100;
   feedRate_t Motion::xy_probe_feedrate_mm_s = MMM_TO_MMS(XY_PROBE_FEEDRATE);
 #endif
 
-#if ENABLED(DWIN_LCD_PROUI)
+#if ENABLED(PROUI_ITEM_ZFR)
   uint16_t Motion::z_probe_slow_mm_s = MMM_TO_MMS(Z_PROBE_FEEDRATE_SLOW);
 #elif Z_PROBE_FEEDRATE_SLOW
   constexpr feedRate_t Motion::z_probe_slow_mm_s;
@@ -1104,20 +1104,6 @@ void Motion::blocking_move(const xy_pos_t &raw, const feedRate_t fr_mm_s/*=0.0f*
    * Move Z to Z_POST_CLEARANCE,
    * The axis is allowed to move down.
    */
-  void Motion::do_move_after_z_homing() {
-    DEBUG_SECTION(mzah, "do_move_after_z_homing", DEBUGGING(LEVELING));
-    #ifdef Z_POST_CLEARANCE
-    #if ENABLED(DWIN_ZHOME_MENU)     
-      do_z_clearance(CZ_AFTER_HOMING, ALL(HOMING_Z_WITH_PROBE, HAS_STOWABLE_PROBE) && TERN0(HAS_BED_PROBE, endstops.z_probe_enabled), true);
-    #else
-      do_z_clearance(Z_POST_CLEARANCE, ALL(HOMING_Z_WITH_PROBE, HAS_BED_PROBE) && TERN0(HAS_BED_PROBE, endstops.z_probe_enabled), true);
-    #endif
-
-    #elif ENABLED(USE_PROBE_FOR_Z_HOMING)
-      probe.move_z_after_probing();
-    #endif
-  }
-
   #ifndef Z_POST_CLEARANCE  // May be set by proui/dwin.h :-P
     #ifdef Z_AFTER_HOMING
       #define Z_POST_CLEARANCE Z_AFTER_HOMING
@@ -1125,6 +1111,15 @@ void Motion::blocking_move(const xy_pos_t &raw, const feedRate_t fr_mm_s/*=0.0f*
       #define Z_POST_CLEARANCE Z_CLEARANCE_FOR_HOMING
     #endif
   #endif
+
+  void Motion::do_move_after_z_homing() {
+    DEBUG_SECTION(mzah, "do_move_after_z_homing", DEBUGGING(LEVELING));
+    #if ENABLED(DWIN_ZHOME_MENU)
+      do_z_clearance(CZ_AFTER_HOMING, ALL(HOMING_Z_WITH_PROBE, HAS_STOWABLE_PROBE) && TERN0(HAS_BED_PROBE, endstops.z_probe_enabled), true);
+    #else
+      do_z_clearance(Z_POST_CLEARANCE, false, true);
+    #endif
+  }
 
   void Motion::do_z_post_clearance() { do_z_clearance(Z_POST_CLEARANCE); }
 
@@ -1325,7 +1320,7 @@ void Motion::restore_feedrate_and_scaling() {
     //SERIAL_ECHOLNPGM("Motion limits in: ", target.x, ", ", target.y, ", ", target.z);
     //SERIAL_EOL();
 
-    if (!soft_endstop._enabled) return;
+    if (!soft_endstop.enabled()) return;
 
     #if IS_KINEMATIC
 
@@ -2747,7 +2742,7 @@ void Motion::prepare_line_to_destination() {
           #endif
         }
 
-      #endif // NUM_Z_STEPPERS >= 3
+      #endif // Z_MULTI_ENDSTOPS
 
       // Reset flags for X, Y, Z motor locking
       switch (axis) {

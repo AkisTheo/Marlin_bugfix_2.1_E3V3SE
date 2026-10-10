@@ -252,8 +252,8 @@
  * M485 - Send RS485 packets (Requires RS485_SERIAL_PORT)
  * M486 - Identify and cancel objects. (Requires CANCEL_OBJECTS)
  * M493 - Set / Report input FT Motion/Shaping parameters. (Requires FT_MOTION)
- * M495 - Set / Start resonance test. (Requires FTM_RESONANCE_TEST)
- * M496 - Abort resonance test. (Requires FTM_RESONANCE_TEST)
+ * M495 - Set / Start resonance test. (Requires RESONANCE_TEST)
+ * M496 - Abort resonance test. (Requires RESONANCE_TEST)
  * M500 - Store parameters in EEPROM. (Requires EEPROM_SETTINGS)
  * M501 - Restore parameters from EEPROM. (Requires EEPROM_SETTINGS)
  * M502 - Revert to the default "factory settings". ** Does not write them to EEPROM! **
@@ -330,11 +330,11 @@
  * M7219 - Control Max7219 Matrix LEDs. (Requires MAX7219_GCODE)
  *
  *** SCARA ***
- * M360 - SCARA calibration: Move to cal-position ThetaA (0 deg calibration)
- * M361 - SCARA calibration: Move to cal-position ThetaB (90 deg calibration - steps per degree)
- * M362 - SCARA calibration: Move to cal-position PsiA (0 deg calibration)
- * M363 - SCARA calibration: Move to cal-position PsiB (90 deg calibration - steps per degree)
- * M364 - SCARA calibration: Move to cal-position PSIC (90 deg to Theta calibration position)
+ * M360 - SCARA calibration: Move to cal-position ThetaA (0 deg calibration) (Requires SCARA_CALIBRATION)
+ * M361 - SCARA calibration: Move to cal-position ThetaB (90 deg calibration - steps per degree) (Requires SCARA_CALIBRATION)
+ * M362 - SCARA calibration: Move to cal-position PsiA (0 deg calibration) (Requires SCARA_CALIBRATION)
+ * M363 - SCARA calibration: Move to cal-position PsiB (90 deg calibration - steps per degree) (Requires SCARA_CALIBRATION)
+ * M364 - SCARA calibration: Move to cal-position PSIC (90 deg to Theta calibration position) (Requires SCARA_CALIBRATION)
  *
  *** Custom codes (can be changed to suit future G-code standards) ***
  * G425 - Calibrate using a conductive object. (Requires CALIBRATION_GCODE)
@@ -1062,7 +1062,7 @@ private:
     static void M360();
   #endif
 
-  #if ENABLED(SCARA)
+  #if ENABLED(SCARA_CALIBRATION)
     static bool M360();
     static bool M361();
     static bool M362();
@@ -1136,11 +1136,12 @@ private:
     static void M493_report(const bool forReplay=true);
     static void M494();
     static void M494_report(const bool forReplay=true);
-    #if ENABLED(FTM_RESONANCE_TEST)
+  #endif
+
+  #if ENABLED(RESONANCE_TEST)
       static void M495();
       static void M495_report(const bool forReplay=true);
       static void M496();
-    #endif
   #endif
 
   static void M500();

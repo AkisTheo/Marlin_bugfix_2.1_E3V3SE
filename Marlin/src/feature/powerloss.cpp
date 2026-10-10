@@ -251,7 +251,9 @@ void PrintJobRecovery::save(const bool force/*=false*/, const float zraise/*=POW
 
     TERN_(HAS_HEATED_CHAMBER, info.target_temperature_chamber = thermalManager.degTargetChamber());
 
-    TERN_(HAS_FAN, COPY(info.fan_speed, thermalManager.fan_speed));
+    #if HAS_FAN
+      FANS_LOOP(f) info.fan_speed[f] = fans[f].speed;
+    #endif
 
     #if HAS_LEVELING
       info.flag.leveling = planner.leveling_active;
@@ -311,7 +313,7 @@ void PrintJobRecovery::save(const bool force/*=false*/, const float zraise/*=POW
 
   #endif
 
-#endif // POWER_LOSS_PIN
+#endif // PIN_EXISTS(POWER_LOSS)
 
 #if PIN_EXISTS(POWER_LOSS) || ENABLED(DEBUG_POWER_LOSS_RECOVERY)
 

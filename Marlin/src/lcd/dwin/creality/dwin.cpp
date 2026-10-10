@@ -2145,7 +2145,7 @@ static void Show_Temp_Default_Data(const uint8_t line, uint8_t index)
     DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(line) + TEMP_SET_OFFSET, HMI_ValueStruct.Bed_Temp);
     break;
   case TEMP_CASE_FAN:
-    DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(line) + TEMP_SET_OFFSET, thermalManager.fan_speed[0]);
+    DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(line) + TEMP_SET_OFFSET, fans[0].speed);
     break;
   default:
     break;
@@ -2217,7 +2217,7 @@ void Item_Tune_Fan(const uint8_t row)
 #endif
 #endif
     Draw_Menu_Line(row, ICON_FanSpeed);
-    DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(row) + PRINT_SET_OFFSET, thermalManager.fan_speed[0]);
+    DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(row) + PRINT_SET_OFFSET, fans[0].speed);
   }
 }
 
@@ -2402,7 +2402,7 @@ void Draw_Tune_Menu()
       if (HMI_flag.language < Language_Max) {
         DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Fan, TUNE_MENU_START_X + 42, THUMB_MBASE(row) + JPN_OFFSET);
         Thumb_Draw_Menu_Line(row, ICON_FanSpeed);
-        DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, THUMB_MBASE(row) + PRINT_SET_OFFSET, thermalManager.fan_speed[0]);
+        DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, THUMB_MBASE(row) + PRINT_SET_OFFSET, fans[0].speed);
       }
     }
 
@@ -5014,9 +5014,9 @@ void update_variable()
 #endif
 #if HAS_FAN
   static uint8_t _fanspeed = 0;
-  const bool _new_fanspeed = _fanspeed != thermalManager.fan_speed[0];
+  const bool _new_fanspeed = _fanspeed != fans[0].speed;
   if (_new_fanspeed)
-    _fanspeed = thermalManager.fan_speed[0];
+    _fanspeed = fans[0].speed;
 #endif
 
   if (!ht)
@@ -5107,7 +5107,7 @@ void update_variable()
 #if HAS_FAN
   if (_new_fanspeed)
   {
-    _fanspeed = thermalManager.fan_speed[0];
+    _fanspeed = fans[0].speed;
     ; // DWIN_Draw_IntValue(true, true, 0, DWIN_FONT_STAT, Color_White, Color_Bg_Black, 3, 176 + 2 *STAT_CHR_W, 247, _fanspeed);
   }
 #endif
@@ -5143,9 +5143,9 @@ void update_middle_variable()
 #endif
 #if HAS_FAN
   static uint8_t _fanspeed = 0;
-  const bool _new_fanspeed = _fanspeed != thermalManager.fan_speed[0];
+  const bool _new_fanspeed = _fanspeed != fans[0].speed;
   if (_new_fanspeed)
-    _fanspeed = thermalManager.fan_speed[0];
+    _fanspeed = fans[0].speed;
 #endif
 
   if (!ht)
@@ -5221,7 +5221,7 @@ void update_middle_variable()
 #if HAS_FAN
   if (_new_fanspeed)
   {
-    _fanspeed = thermalManager.fan_speed[0];
+    _fanspeed = fans[0].speed;
     DWIN_Draw_IntValue_N0SPACE(true, true, 0, DWIN_FONT_STAT, Color_White, Color_Bg_Black, 3, 175 + 2 * STAT_CHR_W, NUM_FAN_Y, _fanspeed);
   }
 #endif
@@ -5505,7 +5505,7 @@ void Draw_Status_Area(bool with_update)
 
 #if HAS_FAN
   DWIN_ICON_Show(ICON, ICON_FanSpeed, 187, 383);
-  DWIN_Draw_IntValue(true, true, 0, DWIN_FONT_STAT, Color_White, Color_Bg_Black, 3, 195 + 2 * STAT_CHR_W, 388, thermalManager.fan_speed[0]);
+  DWIN_Draw_IntValue(true, true, 0, DWIN_FONT_STAT, Color_White, Color_Bg_Black, 3, 195 + 2 * STAT_CHR_W, 388, fans[0].speed);
 #endif
 
 #if HAS_ZOFFSET_ITEM
@@ -5541,7 +5541,7 @@ void Draw_Status_Area(bool with_update)
 
 #if HAS_FAN
   DWIN_ICON_Show(ICON, ICON_FanSpeed, 171, 245);
-  DWIN_Draw_IntValue(true, true, 0, DWIN_FONT_STAT, Color_White, Color_Bg_Black, 3, 175 + 2 * STAT_CHR_W, 247, thermalManager.fan_speed[0]);
+  DWIN_Draw_IntValue(true, true, 0, DWIN_FONT_STAT, Color_White, Color_Bg_Black, 3, 175 + 2 * STAT_CHR_W, 247, fans[0].speed);
 #endif
 
 #if HAS_ZOFFSET_ITEM
@@ -5604,8 +5604,8 @@ void Draw_Mid_Status_Area(bool with_update)
 
 #if HAS_FAN
   DWIN_ICON_Show(ICON, ICON_FanSpeed, ICON_FAN_X, ICON_FAN_Y);
-  DWIN_Draw_IntValue_N0SPACE(true, true, 0, DWIN_FONT_STAT, Color_White, Color_Bg_Black, 3, 175 + 2 * STAT_CHR_W, NUM_FAN_Y, thermalManager.fan_speed[0]);
-  // DWIN_Draw_IntValue(true, true, 0, DWIN_MIDDLE_FONT_STAT, Color_White, Color_Bg_Black, 3, NUM_FAN_X , ICON_FAN_Y, thermalManager.fan_speed[0]);
+  DWIN_Draw_IntValue_N0SPACE(true, true, 0, DWIN_FONT_STAT, Color_White, Color_Bg_Black, 3, 175 + 2 * STAT_CHR_W, NUM_FAN_Y, fans[0].speed);
+  // DWIN_Draw_IntValue(true, true, 0, DWIN_MIDDLE_FONT_STAT, Color_White, Color_Bg_Black, 3, NUM_FAN_X , ICON_FAN_Y, fans[0].speed);
 #endif
 
 #if HAS_ZOFFSET_ITEM
@@ -8913,7 +8913,7 @@ void HMI_Temperature()
 
     case TEMP_CASE_FAN: // Fan speed
       checkkey = FanSpeed;
-      HMI_ValueStruct.Fan_speed = thermalManager.fan_speed[0];
+      HMI_ValueStruct.Fan_speed = fans[0].speed;
       #if ENABLED(DWIN_RENDER_THUMBNAIL) // ? Thumb Enabled
         if (hasThumbnail){
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, THUMB_MBASE(select_temp.now + ThumbMROWS - index_temp) + TEMP_SET_OFFSET, HMI_ValueStruct.Fan_speed);
@@ -10290,7 +10290,7 @@ void HMI_ThumbTune() {
     case TUNE_CASE_FAN: // Fan speed
       HMI_flag.Refresh_bottom_flag = true;
       checkkey = ThumbFanSpeed;
-      HMI_ValueStruct.Fan_speed = thermalManager.fan_speed[0];
+      HMI_ValueStruct.Fan_speed = fans[0].speed;
       DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, THUMB_MBASE(TUNE_CASE_FAN + ThumbMROWS - thumb_index_tune) + PRINT_SET_OFFSET, HMI_ValueStruct.Fan_speed);
       EncoderRate.enabled = true;
       break;
@@ -10411,7 +10411,7 @@ void HMI_Tune()
 #if HAS_FAN
     case TUNE_CASE_FAN: // Fan speed
       checkkey = FanSpeed;
-      HMI_ValueStruct.Fan_speed = thermalManager.fan_speed[0];
+      HMI_ValueStruct.Fan_speed = fans[0].speed;
       DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, MBASE(TUNE_CASE_FAN + MROWS - index_tune) + PRINT_SET_OFFSET, HMI_ValueStruct.Fan_speed);
       EncoderRate.enabled = true;
       break;

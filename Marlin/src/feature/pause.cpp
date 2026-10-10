@@ -217,16 +217,8 @@ bool load_filament(const float slow_load_length/*=0*/, const float fast_load_len
 
     while (marlin.wait_for_user) {
       impatient_beep(max_beep_count);
-      #if ALL(HAS_FILAMENT_SENSOR, FILAMENT_CHANGE_RESUME_ON_INSERT)
-        #if MULTI_FILAMENT_SENSOR
-          #define _CASE_INSERTED(N) case N-1: if (!FILAMENT_IS_OUT(N)) marlin.wait_for_user = false; break;
-          switch (motion.extruder) {
-            REPEAT_1(NUM_RUNOUT_SENSORS, _CASE_INSERTED)
-          }
-        #else
-          if (!FILAMENT_IS_OUT()) marlin.wait_for_user = false;
-        #endif
-      #endif
+      if (TERN0(FILAMENT_CHANGE_RESUME_ON_INSERT, !active_filament_is_out()))
+        marlin.user_resume();
       marlin.idle_no_sleep();
     }
   }
@@ -510,7 +502,7 @@ bool pause_print(const float retract, const xyz_pos_t &park_point, const bool sh
   planner.synchronize();
 
   #if ALL(ADVANCED_PAUSE_FANS_PAUSE, HAS_FAN)
-    thermalManager.set_fans_paused(true);
+    Fan::all_pause();
   #endif
 
   // Initial retract before move to filament change position
@@ -600,9 +592,31 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
   KEEPALIVE_STATE(PAUSED_FOR_USER);
   TERN_(HOST_PROMPT_SUPPORT, hostui.continue_prompt(GET_TEXT_F(MSG_NOZZLE_PARKED)));
   TERN_(EXTENSIBLE_UI, ExtUI::onUserConfirmRequired(GET_TEXT_F(MSG_NOZZLE_PARKED)));
-  marlin.wait_for_user = true;    // LCD click or M108 will clear this
+  marlin.wait_start();    // LCD click or M108 will clear this
+
+  #if ENABLED(FILAMENT_CHANGE_RESUME_ON_INSERT)
+    // Old filament may still be in the sensor, so wait for it to stay clear before
+    // treating "filament present" as a new insert. This also rides out switch bounce.
+    constexpr millis_t clear_ms = 500;
+    millis_t last_present_ms = millis();
+    bool cleared = false;
+  #endif
+
   while (marlin.wait_for_user) {
     impatient_beep(max_beep_count);
+
+    #if ENABLED(FILAMENT_CHANGE_RESUME_ON_INSERT)
+      if (is_reload) {
+        const millis_t ms = millis();
+        if (active_filament_is_out()) {
+          if (ELAPSED(ms, last_present_ms + clear_ms)) cleared = true;
+        }
+        else if (cleared)
+          marlin.user_resume();
+        else
+          last_present_ms = ms;
+      }
+    #endif
 
     // If the nozzle has timed out...
     if (!nozzle_timed_out)
@@ -810,7 +824,7 @@ void resume_print(
   #endif
 
   #if ALL(ADVANCED_PAUSE_FANS_PAUSE, HAS_FAN)
-    thermalManager.set_fans_paused(false);
+    Fan::all_resume();
   #endif
 
   TERN_(HAS_FILAMENT_SENSOR, runout.reset());

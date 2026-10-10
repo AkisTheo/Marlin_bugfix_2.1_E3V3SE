@@ -140,7 +140,7 @@
 
 
 //Get model cooling fan status
-#define GET_FAN_SPD()                   thermalManager.fan_speed[0]
+#define GET_FAN_SPD()                   fans[0].speed
 //Set model cooling fan status 0~255
 #define SET_FAN_SPD(sta)                thermalManager.set_fan_speed(0, (sta))
 
