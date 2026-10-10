@@ -161,6 +161,7 @@ bool isPaused = false;
 /* Value Init */
 HMI_value_t HMI_ValueStruct;
 HMI_Flag_t HMI_flag{0};
+bool reset_flag = false;
 millis_t dwin_heat_time = 0;
 uint8_t G29_level_num = 0; // Record how many points g29 has been leveled to determine whether g29 is leveled normally.
 bool end_flag = false;     // Prevent repeated refresh of curve completion instructions
@@ -5296,7 +5297,7 @@ void Init_Shift_Name()
   const uint16_t fileCnt = card.get_num_items();
   if (WITHIN(filenum, 0, fileCnt - 1))
   {
-    card.getfilename_sorted(SD_ORDER(filenum, fileCnt));
+    card.selectFileByIndexSorted(filenum);
     char *const name = card.longest_filename();
     make_name_without_ext(shift_name, name, sizeof(shift_name) - 1);
   }
@@ -5326,7 +5327,7 @@ void Draw_SDItem(const uint16_t item, int16_t row = -1)
     return;
   }
 
-  card.getfilename_sorted(SD_ORDER(item - is_subdir, card.get_num_items()));
+  card.selectFileByIndexSorted(item - is_subdir);
   char *const name = card.longest_filename();
 
 #if ENABLED(SCROLL_LONG_FILENAMES)
@@ -6357,7 +6358,7 @@ void HMI_SelectFile()
     else
     {
       const uint16_t filenum = select_file.now - 1 - hasUpDir;
-      card.getfilename_sorted(SD_ORDER(filenum, card.get_num_items()));
+      card.selectFileByIndexSorted(filenum);
       if (card.flag.filenameIsDir)
       {
         SDCard_Folder(card.filename);

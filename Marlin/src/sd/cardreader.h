@@ -64,7 +64,6 @@ extern const char M23_STR[], M24_STR[];
   #define MEDIA_SUPPORT_BIN_FILES 1
 #endif
 
-extern bool reset_flag; // reset flag to avoid OCP overlaping
 typedef struct {
   bool saving:1,                // Receiving a G-code file or logging commands during a print
        logging:1,               // Log enqueued commands to the open file. See GCodeQueue::advance()
@@ -282,14 +281,6 @@ public:
    */
   static const char* diveToFile(const bool update_cwd, MediaFile* &inDirPtr, const char * const path, const bool echo=false);
 
-
-  #if ENABLED(SDCARD_RATHERRECENTFIRST) && DISABLED(SDCARD_SORT_ALPHA)
-  #define SD_ORDER(N,C) ((C) - 1 - (N))
-#else
-  #define SD_ORDER(N,C) N
-#endif
-
-
   #if ENABLED(SDCARD_SORT_ALPHA)
     static void presort();
     static void selectFileByIndexSorted(const int16_t nr);
@@ -302,7 +293,6 @@ public:
     FORCE_INLINE static void selectFileByIndexSorted(const int16_t nr) {
       selectFileByIndex(TERN(SDCARD_RATHERRECENTFIRST, get_num_items() - 1 - nr, (nr)));
     }
-     FORCE_INLINE static void getfilename_sorted(const uint16_t nr) { selectFileByIndex(nr); }
   #endif
 
   static void ls(const uint8_t lsflags=0);
