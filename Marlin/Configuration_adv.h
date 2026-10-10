@@ -1270,10 +1270,10 @@
    * These options cause FT Motion to delay for > 750µs after a DIR change on a given axis.
    * Disable only if you are certain that this can never happen with your TMC2208s.
    */
-    //#define FTM_DIR_CHANGE_HOLD_X
-    //#define FTM_DIR_CHANGE_HOLD_Y
-    //#define FTM_DIR_CHANGE_HOLD_Z
-    //#define FTM_DIR_CHANGE_HOLD_E
+    #define FTM_DIR_CHANGE_HOLD_X
+    #define FTM_DIR_CHANGE_HOLD_Y
+    #define FTM_DIR_CHANGE_HOLD_Z
+    #define FTM_DIR_CHANGE_HOLD_E
 
 #endif // FT_MOTION
 
@@ -3210,7 +3210,7 @@
   #endif
 
   #if AXIS_IS_TMC_CONFIG(X)
-    #define X_CURRENT       550        // (mA) RMS current. Multiply by 1.414 for peak current.
+    #define X_CURRENT       600        // (mA) RMS current. Multiply by 1.414 for peak current.
     #define X_CURRENT_HOME  X_CURRENT  // (mA) RMS current for homing. (Typically lower than *_CURRENT.)
     #define X_MICROSTEPS     16        // 0..256
     #define X_RSENSE          0.15
@@ -3230,7 +3230,7 @@
   #endif
 
   #if AXIS_IS_TMC_CONFIG(Y)
-    #define Y_CURRENT       550
+    #define Y_CURRENT       600
     #define Y_CURRENT_HOME  Y_CURRENT
     #define Y_MICROSTEPS     16
     #define Y_RSENSE          0.15

@@ -160,10 +160,6 @@ Configuration_adv.h E FT_MOTION
 Configuration_adv.h E FTM_IS_DEFAULT_MOTION
 Configuration_adv.h E FTM_DEFAULT_SHAPER_Y ftMotionShaper_3HEI
 Configuration_adv.h E FTM_SHAPING_DEFAULT_FREQ_Y 42.0f
-Configuration_adv.h D FTM_DIR_CHANGE_HOLD_X
-Configuration_adv.h D FTM_DIR_CHANGE_HOLD_Y
-Configuration_adv.h D FTM_DIR_CHANGE_HOLD_Z
-Configuration_adv.h D FTM_DIR_CHANGE_HOLD_E
 Configuration_adv.h E SHAPING_FREQ_X 42.0
 Configuration_adv.h E DEFAULT_STEPPER_TIMEOUT_SEC 1200
 Configuration_adv.h E DISABLE_IDLE_X false
@@ -215,11 +211,11 @@ Configuration_adv.h E PARK_HEAD_ON_PAUSE
 Configuration_adv.h E FILAMENT_LOAD_UNLOAD_GCODES
 Configuration_adv.h D CONFIGURE_FILAMENT_CHANGE
 Configuration_adv.h E INTERPOLATE false
-Configuration_adv.h E X_CURRENT 550
+Configuration_adv.h E X_CURRENT 600
 Configuration_adv.h E X_RSENSE 0.15
 Configuration_adv.h E X_INTERPOLATE false
 Configuration_adv.h E X_HOLD_MULTIPLIER 0.5
-Configuration_adv.h E Y_CURRENT 550
+Configuration_adv.h E Y_CURRENT 600
 Configuration_adv.h E Y_RSENSE 0.15
 Configuration_adv.h E Y_HOLD_MULTIPLIER 0.5
 Configuration_adv.h E Z_RSENSE 0.15
