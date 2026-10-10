@@ -69,3 +69,13 @@ The `Bed_Scale_test` branch added a dedicated `BED_SCALE` module and G-code hand
 See [`.github/copilot-instructions.md`](./.github/copilot-instructions.md) for exact build, unit-test, build-test, and validation commands. Single unit tests use `UNIT_TEST_CONFIG` names from `test/*.ini`; single firmware build tests use `TEST_TARGET` and optional `ONLY_TEST`.
 
 The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --hard HEAD` after test configurations. Never enable it when working with user changes unless explicitly approved. Always check git status before and after commands that may replace configuration files.
+
+## Architecture branch progress (`architecture/e3v3se-upstream-seams`)
+
+- Merged upstream bugfix-2.1.x (220 commits) with conflicts resolved in favor of upstream core + fork hooks.
+- Step 1 guardrails: `buildroot/share/e3v3se/check_profile.py` (boundary/build/config).
+- Step 2 one-click print: realigned with upstream; added `selectNewestFile()` depth-sync (from `origin/fix/53-one-click-print-start-wrong-file`). Not yet tested on a printer.
+- Step 3: auto Z-offset moved to `Marlin/src/e3v3se/`. Thumbnail code is not separable (about 300 refs in dwin.cpp plus marlinui/M73 hooks); left in place.
+- Step 4: C13 SD config profile `profiles/c13_sd` (242 define overrides + residual patches). Firmware verified identical to pre-change build except for the timestamp.
+- Next: C13 host profile (compare with `for_Octoprint`), then C14.
+- `Marlin/Config-export.h` is a tracked build artifact; consider untracking.
