@@ -780,6 +780,7 @@ typedef struct {
 
 extern HMI_value_t HMI_ValueStruct;
 extern HMI_Flag_t HMI_flag;
+#define hmiFlag HMI_flag // cardreader.cpp (upstream) refers to hmiFlag
 extern bool reset_flag; // Suppress one-click print after a reset / first-boot language pick
 extern bool end_flag; //Prevent repeated refresh of curve completion instructions
 // Show ICO
