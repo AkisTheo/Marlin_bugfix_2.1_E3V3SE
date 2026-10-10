@@ -96,3 +96,7 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - Origin: commit e10eec2d7b ("false positive thermal protection") used a function-local counter that reset every call, so bed MINTEMP effectively never fired. A later 10-sample debounce re-enabled it and halted printers with bad bed sensors.
 - Now explicit: `E3V3SE_IGNORE_BED_MINTEMP` (Configuration.h, in profile residual) skips only the bed MINTEMP check in `updateTemperaturesFromRawValues()`. BED_MAXTEMP, thermal runaway and heating-failed (WATCH_BED) protections remain active.
 - PATH `pio` (6.1.19) is stale and fails to fetch tool-scons; use `~/.platformio/penv/bin/pio` (6.2.0).
+
+## Thumbnail renderer extraction
+- `DWIN_RenderThumb` and its SD/RLE helpers moved from `lcd/dwin/creality/dwin_lcd.cpp` to `Marlin/src/e3v3se/ThumbRender.cpp` (built via `platformio.ini` filter, guarded by `DWIN_RENDER_THUMBNAIL`). Behavior unchanged; flash +56 B.
+- The thumbnail UI hooks in `dwin.cpp` (ThumbTune menus, `Goto_ThumbPrint`, ~116 `hasThumbnail` branches inside HMI handlers) stay there: they share static state with the handlers and can't be split without a UI rewrite.
