@@ -8,15 +8,15 @@
  * @copyright Copyright (c) 2021
  *
  */
-#include "../gcode.h"
-#include "../../module/planner.h"
-#include "../../module/stepper.h"
-#include "../../module/probe.h"
+#include "../gcode/gcode.h"
+#include "../module/planner.h"
+#include "../module/stepper.h"
+#include "../module/probe.h"
 // #include "../../../Configuration_adv.h"
-#include "../../feature/bedlevel/bedlevel.h"
-#include "../../feature/bedlevel/abl/bbl.h"
-#include "../../module/AutoOffset.h"
-#include "../../lcd/dwin/creality/dwin.h"
+#include "../feature/bedlevel/bedlevel.h"
+#include "../feature/bedlevel/abl/bbl.h"
+#include "AutoOffset.h"
+#include "../lcd/dwin/creality/dwin.h"
 
 
 /**

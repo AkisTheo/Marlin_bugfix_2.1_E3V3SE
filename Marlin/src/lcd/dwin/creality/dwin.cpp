@@ -67,7 +67,7 @@ lin 3D Printer Firmware
 #include "../../../feature/powerloss.h"
 #endif
 
-#include "../../../module/AutoOffset.h"
+#include "../../../e3v3se/AutoOffset.h"
 
 // #include <QRCodeGenerator.h>
 
