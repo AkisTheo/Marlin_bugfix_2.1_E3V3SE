@@ -85,3 +85,9 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - `EEPROM_VERSION` is V93 both before and after the merge; `SettingsData` layout is unchanged for this config (751 B). `HAS_LEVELING_TEMP_EDIT` is off (needs PROUI), `HAS_MESH_STORAGE` unchanged.
 - Hooks intact: `HMI_Init/Read_Boot_Step_Value`, `HMI_Confirm` -> `M8015 S1`, `M8015.cpp` (`Need_boot_flag`), `G29.cpp` boot-leveling confirm popup.
 - Wizard reruns only when the boot-step byte != `Boot_Step_Max` (blank EEPROM / fresh install). Not retriggered on settings reset (unchanged behavior). Not tested on device.
+
+## FT_MOTION (C13 SD)
+- Enabled via profile overrides (`FT_MOTION`, `FTM_IS_DEFAULT_MOTION`, X shaper NONE, Y 3HEI 42 Hz, X freq 37). Legacy `INPUT_SHAPING_X/Y` removed (replaced by FTM shapers). `LIN_ADVANCE` stays on; upstream FTM supports it natively (`FTM_HAS_LIN_ADVANCE`). Rationale: issue #23 (SD print stalls fixed by FTM).
+- Issue #23 comment also had LIN_ADV and STEALTHCHOP_E off; we kept them on per request. If stalls return, test with them off first.
+- Issue #23 also saw broken Z-offset after FTM: `getZOffset()` (e3v3se/AutoOffset.cpp) now runs under `FTM_DISABLE_IN_SCOPE()`.
+- Baseline: RAM 29,220 B, flash 234,668 B (47.3%, ~1.2 KB under the 46%-of-512KB cap).
