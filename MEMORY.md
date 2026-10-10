@@ -79,3 +79,9 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - Step 4: C13 SD config profile `profiles/c13_sd` (242 define overrides + residual patches). Firmware verified identical to pre-change build except for the timestamp.
 - Next: C13 host profile (compare with `for_Octoprint`), then C14.
 - `Marlin/Config-export.h` is a tracked build artifact; consider untracking.
+
+## First-boot wizard audit (post upstream merge)
+- Wizard state lives in raw BL24CXX bytes 0x01-0x07 (below `EEPROM_OFFSET` 100), so it is independent of Marlin's settings block and survives settings resets/version bumps (same as pre-merge behavior).
+- `EEPROM_VERSION` is V93 both before and after the merge; `SettingsData` layout is unchanged for this config (751 B). `HAS_LEVELING_TEMP_EDIT` is off (needs PROUI), `HAS_MESH_STORAGE` unchanged.
+- Hooks intact: `HMI_Init/Read_Boot_Step_Value`, `HMI_Confirm` -> `M8015 S1`, `M8015.cpp` (`Need_boot_flag`), `G29.cpp` boot-leveling confirm popup.
+- Wizard reruns only when the boot-step byte != `Boot_Step_Max` (blank EEPROM / fresh install). Not retriggered on settings reset (unchanged behavior). Not tested on device.
