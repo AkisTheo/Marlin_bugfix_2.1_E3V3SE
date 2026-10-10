@@ -1,113 +1,78 @@
-# Marlin 2.1.x — Ender-3 V3 SE Custom Firmware
+# Copilot instructions
 
-This is a community fork of [Marlin 2.1.x bugfix](https://github.com/MarlinFirmware/Marlin) tailored for the **Creality Ender-3 V3 SE** (CR4NS200320C13 / C14 boards). See [README.md](../README.md) for the full feature list and branch map.
+For repository-wide agent rules and the branch/custom-feature history, also read the fork rules in [`AGENTS.E3V3SE.md`](../AGENTS.E3V3SE.md) (upstream's own `AGENTS.md` is the generic Marlin reference) and [`MEMORY.md`](../MEMORY.md).
 
-## Target Hardware
+## Project and target
 
-| Item | Value |
-|------|-------|
-| Board (C13) | `BOARD_CREALITY_V3_GD303` — STM32F103RE (512 KB Flash, 64 KB RAM) |
-| Board (C14) | STM32F401 variant |
-| Serial | UART1, 115200 baud |
-| EEPROM | IIC BL24CXX, 2 KB @ 0x800 |
-| Flash offset | `0x7000` (bootloader) |
+This repository is a Marlin 2.1.x bugfix fork customized for the Creality Ender-3 V3 SE. It supports two board revisions and separate SD-card and serial-host feature sets:
 
-## Branch Map
-
-| Board | Use case | Branch |
-|-------|----------|--------|
-| C13 | SD card only | `for_E3V3SE` |
-| C14 | SD card only | `for_STM32F401` |
+| Hardware | Use | Branch |
+| --- | --- | --- |
+| C13 (`BOARD_CREALITY_V3_GD303`, STM32F103RE) | SD card | `for_E3V3SE` |
+| C14 (STM32F401) | SD card | `for_STM32F401` |
 | C13 | OctoPrint / serial host | `for_Octoprint` |
 | C14 | OctoPrint / serial host | `for_Octoprint_F401` |
 
-## Build
+Check the active branch and target before changing board-specific configuration or host behavior. The SD-only and host branches do not have identical enabled features.
 
-Uses [PlatformIO](https://platformio.org/). The default environment is `STM32F103RET6_creality`.
+## Build, test, and validation
 
-```bash
-# Build default (C13 board)
+PlatformIO is the firmware build system. The default environment is the C13 target:
+
+```sh
 pio run -e STM32F103RET6_creality
-
-# Build C14 variant
 pio run -e STM32F401RC_creality
-
-# Build all environments
-make marlin           # runs ./buildroot/bin/mftest -a
+make marlin
 ```
 
-Environment definitions live in [platformio.ini](../platformio.ini) and [ini/stm32f1.ini](../ini/stm32f1.ini).
+`make marlin` invokes `buildroot/bin/mftest -a` and builds the configured environments. Environment definitions are in `ini/stm32f1.ini` and `ini/stm32f4.ini`; common configuration and source filters are in `platformio.ini`.
 
-## CRITICAL: Memory Constraints
+Tests are split between native unit tests and firmware build tests:
 
-**Every feature addition must stay within these limits:**
-- RAM: **< 40%** of 64 KB (≈25 KB)
-- Flash: **< 46%** of 512 KB (≈235 KB) for C13 board
-
-Check usage after building via **PlatformIO Home → Project Inspect → Advanced Memory Usage**.  
-Features are annotated with approximate flash costs in [Configuration.h](../Marlin/Configuration.h) comments.
-
-## Configuration
-
-All firmware settings are in two files:
-
-- [Marlin/Configuration.h](../Marlin/Configuration.h) — board, geometry, sensors, LCD, basic features
-- [Marlin/Configuration_adv.h](../Marlin/Configuration_adv.h) — advanced motion, thermal, host support, EEPROM
-
-Features are enabled/disabled with `#define` / `// #define`. Do **not** edit generated files; only edit these two.
-
-## Key Source Directories
-
-| Path | Purpose |
-|------|---------|
-| `Marlin/src/lcd/dwin/creality/` | Custom DWIN display driver for E3V3SE (`dwin.cpp`, `dwin_lcd.cpp`, `ui_position.h`) |
-| `Marlin/src/lcd/e3v2/common/` | Shared DWIN protocol API |
-| `Marlin/src/feature/` | Optional features: runout, babystep, leveling, TMC, input shaping |
-| `Marlin/src/gcode/` | G-code command implementations |
-| `Marlin/src/module/` | Core systems: planner, stepper, temperature, motion, settings |
-| `Marlin/src/HAL/STM32F1/` | HAL for this board's MCU family |
-| `Marlin/src/pins/stm32f1/` | Pin definitions (`pins_CREALITY_V3_GD303.h`) |
-
-## Tests
-
-```bash
-# Unit tests (native simulator)
+```sh
+# All native unit-test configurations
 make unit-test-all-local
-pio test -e native_sim
 
-# Integration tests
+# One unit-test configuration (omit the numeric prefix from test/*.ini)
+make unit-test-single-local UNIT_TEST_CONFIG=default
+make unit-test-single-local UNIT_TEST_CONFIG=extruders_1_runout
+
+# All CI build-test targets
 make tests-all-local
 
-# Pin validation
-make validate-pins
+# One build-test target; optionally select one test by name or 1-based index
+make tests-single-local TEST_TARGET=mega2560 ONLY_TEST=2
 ```
 
-Test configs live in [test/](../test/) (`001-default.ini`, `002-extruders_1_runout.ini`, etc.).
+The unit tests live in `Marlin/tests/` and are compiled per configuration listed under `test/`. The build tests are under `buildroot/tests/`. The Makefile also provides Docker variants of the test commands.
 
-## Custom Features (E3V3SE-Specific)
+Repository validation commands:
 
-- **DWIN Thumbnail**: `DWIN_RENDER_THUMBNAIL` — renders G-code embedded thumbnails on display
-- **One Click Print**: `ONE_CLICK_PRINT` — auto-start last print from SD
-- **Delta/X Z-Offset Routine**: custom auto Z-offset calibration
-- **Input Shaping / FT_Motion**: reduce ringing (replaces standard Input Shaper in some branches)
-- **Linear Advance**: pressure advance compensation
-- **HX711 Load Cell**: filament weight sensor (PA4 clk, PC6 data)
-- **CRTouch**: BLTouch-compatible probe for mesh leveling
-- **LCD Dimmer & Brightness**: custom M-codes for display control
-- **Compact 6×6 Grid**: Eduard's bed mesh leveling grid
+```sh
+make validate-lines
+make validate-pins
+make validate-boards
+make validate-urls
+```
 
-## Firmware Binaries
+`validate-lines` checks text formatting with Prettier. `validate-pins` formats and checks pin files; scope it to a pin family when appropriate, e.g. `make validate-pins PINSPATH=stm32f1`. `validate-boards` checks board and pin definitions. `validate-urls` checks source URLs.
 
-Pre-built `.bin` files for C13 board are in [FW_HWC13/](../FW_HWC13/). Flash via SD card by renaming to `firmware.bin`.
+## Architecture and configuration flow
 
-## Serial Debugging
+The build is configuration-driven. `Marlin/Configuration.h` selects the machine, board, geometry, sensors, display, and core features; `Marlin/Configuration_adv.h` controls advanced motion, thermal, host, and storage behavior. PlatformIO loads these settings with the per-environment board definitions and build scripts in `platformio.ini` and `ini/`. Pre-build scripts apply configuration checks and determine which code is compiled, so a feature can affect both configuration validity and source inclusion.
 
-[Serial_Debugger/serial_util.py](../Serial_Debugger/serial_util.py) — utility for serial communication debugging with the printer.
+At runtime, G-code is parsed and queued through `Marlin/src/gcode/`; core motion, planning, step generation, thermal control, and settings are coordinated in `Marlin/src/module/`. Optional behavior is implemented in `Marlin/src/feature/`, while `Marlin/src/HAL/` supplies platform-specific hardware implementations behind shared interfaces. The Ender-3 V3 SE DWIN UI is in `Marlin/src/lcd/dwin/creality/` and uses shared display protocol code in `Marlin/src/lcd/e3v2/common/`.
 
-## Conventions
+Board wiring and board-specific capabilities are defined in `Marlin/src/pins/`, including `pins_CREALITY_V3_GD303.h` for C13. A pin change may require updating validation/build-test expectations as well as the board header.
 
-- C++ code follows the [Marlin style guide](contributing.md)
-- Prefer `#if ENABLED(FEATURE)` / `#if DISABLED(FEATURE)` macros over raw `#ifdef`
-- Use `PROGMEM` and `PSTR()` for string literals on AVR (not needed for STM32 but keep portable)
-- Feature guards: always wrap new features in `#if` blocks with a clear `#define` in `Configuration.h`
-- Memory is the primary constraint — measure before committing any new feature
+## Repository-specific conventions
+
+- Keep machine settings in `Marlin/Configuration.h` and `Marlin/Configuration_adv.h`; don't edit generated build output or `.pio/`.
+- Guard optional code with the relevant feature macro and use Marlin conditionals such as `#if ENABLED(FEATURE)` / `#if DISABLED(FEATURE)` rather than raw `#ifdef` for configuration options.
+- Follow the Marlin C++ coding standards referenced by [`.github/contributing.md`](./contributing.md). Reuse existing feature guards and Marlin helpers, including `TERN`/`TERN_`, where code around the change does so.
+- Preserve portability across Marlin's supported architectures. Use `PROGMEM`/`PSTR()` where required for AVR-compatible strings; they are not needed for this STM32 target.
+- Firmware memory is a hard design constraint: keep RAM below 40% of 64 KB and C13 flash below 46% of 512 KB. Check memory usage after builds, especially when enabling or adding features.
+- Keep hardware-specific changes consistent with the intended branch and board. C13 uses an STM32F103RE, UART1 at 115200 baud, IIC BL24CXX EEPROM (2 KB at `0x800`), and a `0x7000` bootloader offset; C14 uses STM32F401.
+- Custom features include DWIN thumbnail rendering (`DWIN_RENDER_THUMBNAIL`), one-click printing (`ONE_CLICK_PRINT`), Delta/X Z-offset routines, FT_Motion/input shaping, Linear Advance, the HX711 load cell (PA4 clock, PC6 data), CRTouch, LCD dimmer/brightness controls, filament runout handling, and the compact 6×6 leveling grid. Trace both configuration guards and runtime/UI call sites before changing one.
+- The pull request branch and target-specific firmware behavior are documented in [`README.md`](../README.md); the test layout and unit-test model are described in [`test/README.md`](../test/README.md).
+- Prebuilt C13 firmware images are under `FW_HWC13/`; serial debugging support is in `Serial_Debugger/serial_util.py`.

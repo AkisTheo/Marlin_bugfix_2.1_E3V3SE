@@ -1,0 +1,71 @@
+# Repository memory
+
+This is a point-in-time reference for future work, not a substitute for checking the active branch and current source. Branch refs, hardware configurations, and experiments may change. Facts below were inspected on **2026-10-09** in the working tree at `for_E3V3SE`, commit `4d0510d947` (also `origin/for_E3V3SE`).
+
+## Repository identity and remotes
+
+- `navaismo/Marlin_bugfix_2.1_E3V3SE` is an Ender-3 V3 SE customization of Marlin `bugfix-2.1.x`, not just a board config. It contains fork-specific DWIN UI work, automatic Z-offset routines, SD/host variants, and feature experiments.
+- `origin` points to the navaismo firmware repository. `upstream` points to `MarlinFirmware/Marlin`; the upstream development line is `bugfix-2.1.x`.
+- Branch state observed at inspection: `for_E3V3SE` was synchronized with its origin ref; local `for_Octoprint` was one commit ahead of `origin/for_Octoprint`; local `for_Octoprint_F401` was four commits behind `origin/for_Octoprint_F401`. Recheck this before branch integration or comparison.
+- `git diff for_E3V3SE...for_Octoprint` warned that there are multiple merge bases. Do not treat a three-dot diff or cherry-pick between long-lived product branches as a clean representation of all semantic differences; inspect target configuration and exact changed files.
+
+## Product branch map
+
+| Branch | Hardware / purpose | Distinctive settings or state observed |
+| --- | --- | --- |
+| `for_E3V3SE` | C13, SD-first firmware | `BOARD_CREALITY_V3_GD303`; `DWIN_RENDER_THUMBNAIL`, `D_ROUTINE_AUTO_OFFSET`, `USE_AUTOZ_TOOL_2`, `ONE_CLICK_PRINT`; current custom DWIN location is `Marlin/src/lcd/dwin/creality/`. |
+| `for_STM32F401` | C14, SD-first firmware | STM32F401; similar auto-offset and thumbnail feature settings, but DWIN lives under `Marlin/src/lcd/e3v2/creality/`; has `Marlin/src/pins/stm32f4/pins_CREALITY_F401.h`. |
+| `for_Octoprint` | C13, serial-host firmware | Adds `FT_MOTION`, `MEATPACK_ON_SERIAL_PORT_1`, and host support; current ref uses the `lcd/dwin/creality` display path. |
+| `for_Octoprint_F401` | C14, serial-host firmware | Host/FT_Motion/MeatPack config on F401; uses the `lcd/e3v2/creality` display path. |
+| `for_OctoprintwRender` | Older C13 host/render development line | Historical host UI/rendering work; its source layout and feature state predate the current C13 DWIN path. Do not assume it is interchangeable with `for_Octoprint`. |
+| `Bed_Scale_test` | Experimental bed-scale / host work | Adds `BED_SCALE` and `Marlin/src/module/bed_scale/` plus `Marlin/src/gcode/feature/bed_scale/`; history includes `Bed Scale V2` and several test/refactor commits. Treat as experimental, not a release baseline. |
+| `e3v3se_changes` | Configuration/motion test branch | Its inspected tree had no content difference from `for_E3V3SE` at comparison time; its latest commit message was `Conf_Adv motion test`. Recheck refs before assuming it remains identical. |
+| `bugfix-2.1.x` | Fork's upstream-tracking branch | Not one of the named printer product branches; do not use it as a C13/C14 configuration without verifying its content. |
+
+The branch-to-printer/use mapping is also in [`README.md`](./README.md). Historical release tags include `Krasnaya_*` for SD-first firmware and `Belaya_*` for host-enabled firmware, with `_F401` variants. Treat binaries in `FW_HWC13/` or `FW_HWC14/` as release artifacts, not build inputs.
+
+## Hardware and build identity
+
+- C13's configured board is `BOARD_CREALITY_V3_GD303` (STM32F103RE-class target); the C14 product branches target STM32F401.
+- Common C13 settings include serial port 1 at 115200 baud, IIC BL24CXX EEPROM (2 KB), and a `0x7000` flash/bootloader offset. Confirm the active environment and board pin header before relying on these values.
+- PlatformIO default environment is `STM32F103RET6_creality`; the documented F401 environment is `STM32F401RC_creality`. Environment declarations and inherited build flags live in `ini/stm32f1.ini` and `ini/stm32f4.ini`, with shared processing in `platformio.ini`.
+- The custom pin header `Marlin/src/pins/stm32f1/pins_CREALITY_V3_GD303.h` defines the board's motors, endstops/probe, runout, EEPROM, and HX711 connections. HX711 is wired to PA4 clock and PC6 data in the current C13 setup.
+- Project memory targets documented in the project guidance are RAM below 40% of 64 KB and C13 flash below 46% of 512 KB. Compare results for the actual selected environment; these are design limits, not compiler-enforced assertions.
+
+## Architecture and custom feature trails
+
+### Configuration and compilation
+
+`Marlin/Configuration.h` selects the machine/board, basic hardware, display, and core features. `Marlin/Configuration_adv.h` enables advanced motion, storage, host, and advanced feature behavior. `platformio.ini`, the architecture `.ini` files, and `buildroot/share/PlatformIO/scripts/` combine settings and filter sources, so adding an implementation alone may not put it in the build. Feature macros also participate in sanity checks under `Marlin/src/inc/`.
+
+At runtime, G-code handlers under `Marlin/src/gcode/` call core motion/planner/probe/settings code under `Marlin/src/module/`; optional subsystems live under `Marlin/src/feature/`; the HAL maps portable interfaces to hardware. DWIN display workflows span UI code, G-code queueing, the card reader, and the shared DWIN protocol layer. Trace all affected layers before reorganizing code.
+
+### Automatic Z-offset / load-cell path
+
+- `D_ROUTINE_AUTO_OFFSET` is enabled in the inspected primary config; `X_ROUTINE_AUTO_OFFSET` is commented out there.
+- `USE_AUTOZ_TOOL_2` gates much of `Marlin/src/module/AutoOffset.cpp` and `AutoOffset.h`. This custom subsystem reads an HX711 load cell and contains acquisition/filtering and multi-point offset-estimation logic; it is not simply standard Marlin probe-offset code.
+- `Marlin/src/gcode/probe/M8015.cpp` is the one-key offset command path. The DWIN UI includes controls and calls into offset routines in `Marlin/src/lcd/dwin/creality/` on current C13. Keep probe state, bed-level data, planner synchronization, homing, UI flags, and EEPROM save behavior in view when modifying it.
+- `CZ_AFTER_HOMING` is a DWIN Z-height value declared/initialized only for `DWIN_ZHOME_MENU`. Commit `4c1173a9f3` (2026-07-06) fixed its missing declaration/definition behavior: the Configuration option guard and the corresponding DWIN definition must remain paired. References also exist in `probe.h`, `motion.cpp`, `settings.cpp`, and the DWIN UI.
+
+### DWIN, thumbnails, and serial host
+
+- Current C13 moved/uses its Creality display driver under `Marlin/src/lcd/dwin/creality/`; older C14 product branches retain `Marlin/src/lcd/e3v2/creality/`. This path split is a migration/history boundary, not merely two equivalent directories.
+- Thumbnail feature control is `DWIN_RENDER_THUMBNAIL`. Commit `b917c68194` (merged as PR #86 on 2026-09-08) changed the current C13 rendering path to row-run encoding, vertical merging, and color-bucketed rectangle blits, with host-side thumbnail quantization in `SlicerScripts/orca_parser.py`. Its commit notes describe static renderer buffers (~9.6 KB) and on-hardware testing; account for memory, watchdog servicing, panel frame throttling, and transparency sentinel behavior when changing this code. Benchmark notes and replay/stress tools are in `DWIN_OptimizationReference/`.
+- `ONE_CLICK_PRINT` spans SD file selection/card-reader state, G-code handling (including `M1003`), and menu/UI behavior. Commit history includes one-click SD navigation and EEPROM-error handling fixes; a related remote topic branch `fix/53-one-click-print-start-wrong-file` changes `selectNewestFile()` bookkeeping. Check card state and work-directory synchronization before changing selection logic.
+- Host-only behavior includes `HOST_ACTION_COMMANDS`, MeatPack on serial port 1, host G-code/UI commands, and FT_Motion. C13/C14 host branches share product intent but have separate configs and display implementation paths. Confirm host semantics and exact branch before moving code.
+
+### Experimental bed-scale feature
+
+The `Bed_Scale_test` branch added a dedicated `BED_SCALE` module and G-code handlers `M770`/`M772`, with history including calibration/readout test iterations. This is separate from the existing HX711-backed automatic offset code. Do not conflate the two sensor/feature paths or move experimental bed-scale code into a release branch unless requested.
+
+## History milestones worth knowing
+
+- The feature development history includes early automatic-offset integration (`9963554462`, `564cc0c58e`, 2025-era), five-point probing work (`a50d46b83a`), a later four-point `D_ROUTINE_AUTO_OFFSET` configuration, custom DWIN menu work, and one-click printing added in the Krasnaya V2 line (`3543fd5930` / F401 variant `5ee98c6a5b`).
+- Host/OctoPrint development included plugin-support commits such as `ae0a7b2489`, with `M9000`/`M9001`, MeatPack and UI/host-command changes, then Belaya releases. Several related fixes affect host action commands (`M876`) and pause/stop/progress notifications.
+- Upstream Marlin changes are regularly merged into product branches. The current primary branch history includes upstream integration `174fe65f34` (2026-06-11), custom fix `4c1173a9f3`, then the thumbnail optimization merge `4d0510d947`. When behavior differs from upstream, check whether the code is fork-specific before replacing it with upstream code.
+
+## Commands and safe test habits
+
+See [`.github/copilot-instructions.md`](./.github/copilot-instructions.md) for exact build, unit-test, build-test, and validation commands. Single unit tests use `UNIT_TEST_CONFIG` names from `test/*.ini`; single firmware build tests use `TEST_TARGET` and optional `ONLY_TEST`.
+
+The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --hard HEAD` after test configurations. Never enable it when working with user changes unless explicitly approved. Always check git status before and after commands that may replace configuration files.
