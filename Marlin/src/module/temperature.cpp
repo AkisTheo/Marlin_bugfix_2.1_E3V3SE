@@ -740,41 +740,34 @@ void Temperature::factory_reset() {
     raw_pid_t tune_pid = { 0, 0, 0 };
     celsius_float_t maxT = 0, minT = 10000;
 
-    const bool isbed = (heater_id == H_BED),
-           ischamber = (heater_id == H_CHAMBER);
+    const bool isbed = TERN0(PIDTEMPBED,     heater_id == H_BED),
+           ischamber = TERN0(PIDTEMPCHAMBER, heater_id == H_CHAMBER);
 
-    #if ENABLED(PIDTEMPCHAMBER)
-      #define C_TERN(T,A,B) ((T) ? (A) : (B))
-    #else
-      #define C_TERN(T,A,B) (B)
-    #endif
-    #if ENABLED(PIDTEMPBED)
-      #define B_TERN(T,A,B) ((T) ? (A) : (B))
-    #else
-      #define B_TERN(T,A,B) (B)
-    #endif
-    #define PER_CBH(C,B,H) C_TERN(ischamber, C, B_TERN(isbed, B, H))
-    #define SHV(V) C_TERN(ischamber, temp_chamber.soft_pwm_amount = V, B_TERN(isbed, temp_bed.soft_pwm_amount = V, temp_hotend[heater_id].soft_pwm_amount = V))
-    #define ONHEATINGSTART() C_TERN(ischamber, printerEventLEDs.onChamberHeatingStart(), B_TERN(isbed, printerEventLEDs.onBedHeatingStart(), printerEventLEDs.onHotendHeatingStart()))
-    #define ONHEATING(S,C,T) C_TERN(ischamber, printerEventLEDs.onChamberHeating(S,C,T), B_TERN(isbed, printerEventLEDs.onBedHeating(S,C,T), printerEventLEDs.onHotendHeating(S,C,T)))
+    // BED TEST ; BED VALUE ; HOTEND VALUE
+    #define T_BH(T,B,H) TERN(PIDTEMPBED, ((T) ? (B) : (H)), (H))
+    // CHAMBER TEST ; CHAMBER VALUE ; T_BH(...)
+    #define T_CBH(T,C,BH) TERN(PIDTEMPCHAMBER, ((T) ? (C) : (BH)), (BH))
+    // CHAMBER VALUE ; BED VALUE ; HOTEND VALUE
+    #define PER_CBH(C,B,H) T_CBH(ischamber, C, T_BH(isbed, B, H))
+
+    // Set a field value in the pertinent Temp Monitor
+    #define SET_CBH(F,V) PER_CBH(temp_chamber.F = V, temp_bed.F = V, temp_hotend[heater_id].F = V)
+    #define ONHEATINGSTART() PER_CBH(printerEventLEDs.onChamberHeatingStart(), printerEventLEDs.onBedHeatingStart(), printerEventLEDs.onHotendHeatingStart())
+    #define ONHEATING(S,C,T) PER_CBH(printerEventLEDs.onChamberHeating(S,C,T), printerEventLEDs.onBedHeating(S,C,T), printerEventLEDs.onHotendHeating(S,C,T))
 
     #define WATCH_PID DISABLED(NO_WATCH_PID_TUNING) && (ALL(WATCH_CHAMBER, PIDTEMPCHAMBER) || ALL(WATCH_BED, PIDTEMPBED) || ALL(WATCH_HOTENDS, PIDTEMP))
-
     #if WATCH_PID
-      #if ALL(THERMAL_PROTECTION_CHAMBER, PIDTEMPCHAMBER)
-        #define C_GTV(T,A,B) ((T) ? (A) : (B))
-      #else
-        #define C_GTV(T,A,B) (B)
-      #endif
-      #if ALL(THERMAL_PROTECTION_BED, PIDTEMPBED)
-        #define B_GTV(T,A,B) ((T) ? (A) : (B))
-      #else
-        #define B_GTV(T,A,B) (B)
-      #endif
-      #define GTV(C,B,H) C_GTV(ischamber, C, B_GTV(isbed, B, H))
-      const uint16_t watch_temp_period = GTV(WATCH_CHAMBER_TEMP_PERIOD, WATCH_BED_TEMP_PERIOD, WATCH_TEMP_PERIOD);
-      const uint8_t watch_temp_increase = GTV(WATCH_CHAMBER_TEMP_INCREASE, WATCH_BED_TEMP_INCREASE, WATCH_TEMP_INCREASE);
-      const celsius_float_t watch_temp_target = celsius_float_t(target - (watch_temp_increase + GTV(TEMP_CHAMBER_HYSTERESIS, TEMP_BED_HYSTERESIS, TEMP_HYSTERESIS) + 1));
+      // BED TEST ; BED VALUE ; HOTEND VALUE
+      #define W_BH(T,B,H) TERN(THERMAL_PROTECTION_BED, T_BH(T,B,H), (H))
+      // CHAMBER TEST ; CHAMBER VALUE ; W_BH(...)
+      #define W_CBH(T,C,BH) TERN(THERMAL_PROTECTION_CHAMBER, T_CBH(T,C,BH), (BH))
+      // CHAMBER VALUE ; BED VALUE ; HOTEND VALUE
+      #define PER_WATCH_CBH(C,B,H) W_CBH(ischamber, C, W_BH(isbed, B, H))
+
+      const uint16_t watch_temp_period = PER_WATCH_CBH(WATCH_CHAMBER_TEMP_PERIOD, WATCH_BED_TEMP_PERIOD, WATCH_TEMP_PERIOD);
+      const uint8_t watch_temp_increase = PER_WATCH_CBH(WATCH_CHAMBER_TEMP_INCREASE, WATCH_BED_TEMP_INCREASE, WATCH_TEMP_INCREASE);
+      const celsius_float_t watch_hysteresis = PER_WATCH_CBH(TEMP_CHAMBER_HYSTERESIS, TEMP_BED_HYSTERESIS, TEMP_HYSTERESIS),
+                            watch_temp_target = celsius_float_t(target - (watch_temp_increase + watch_hysteresis + 1));
       millis_t temp_change_ms = next_temp_ms + SEC_TO_MS(watch_temp_period);
       celsius_float_t next_watch_temp = 0.0;
       bool heated = false;
@@ -782,7 +775,7 @@ void Temperature::factory_reset() {
 
     TERN_(HAS_FAN_LOGIC, fan_update_ms = next_temp_ms + fan_update_interval_ms);
 
-    TERN_(EXTENSIBLE_UI, ExtUI::onPIDTuning(ischamber ? ExtUI::pidresult_t::PID_CHAMBER_STARTED : isbed ? ExtUI::pidresult_t::PID_BED_STARTED : ExtUI::pidresult_t::PID_STARTED));
+    TERN_(EXTENSIBLE_UI, ExtUI::onPIDTuning(PER_CBH(ExtUI::pidresult_t::PID_CHAMBER_STARTED, ExtUI::pidresult_t::PID_BED_STARTED, ExtUI::pidresult_t::PID_STARTED)));
 
     if (target > PER_CBH(CHAMBER_MAX_TARGET, BED_MAX_TARGET, hotend_max_target(heater_id))) {
       SERIAL_ECHOPGM(STR_PID_AUTOTUNE); SERIAL_ECHOLNPGM(STR_PID_TEMP_TOO_HIGH);
@@ -797,7 +790,7 @@ void Temperature::factory_reset() {
     TERN_(AUTO_POWER_CONTROL, powerManager.power_on());
 
     long bias = PER_CBH(MAX_CHAMBER_POWER, MAX_BED_POWER, PID_MAX) >> 1, d = bias;
-    SHV(bias);
+    SET_CBH(soft_pwm_amount, bias);
 
     #if ENABLED(PRINTER_EVENT_LEDS)
       const celsius_float_t start_temp = PER_CBH(degChamber(), degBed(), degHotend(heater_id));
@@ -809,8 +802,7 @@ void Temperature::factory_reset() {
     LCD_MESSAGE(MSG_HEATING);
 
     // PID Tuning loop
-    marlin.wait_for_heatup = true;
-    while (marlin.wait_for_heatup) { // Can be interrupted with M108
+    for (marlin.heatup_start(); marlin.is_heating(); ) { // Can be interrupted with M108
 
       const millis_t ms = millis();
 
@@ -834,7 +826,7 @@ void Temperature::factory_reset() {
 
         if (heating && current_temp > target && ELAPSED(ms, t2, relay_delay)) {
           heating = false;
-          SHV((bias - d) >> 1);
+          SET_CBH(soft_pwm_amount, (bias - d) >> 1);
           t1 = ms;
           t_high = t1 - t2;
           maxT = target;
@@ -874,7 +866,7 @@ void Temperature::factory_reset() {
               }
             }
           }
-          SHV((bias + d) >> 1);
+          SET_CBH(soft_pwm_amount, (bias + d) >> 1);
           TERN_(HAS_STATUS_MESSAGE, ui.status_printf(0, F(S_FMT " %i/%i"), GET_TEXT(MSG_PID_CYCLE), cycles, ncycles));
           cycles++;
           minT = target;
@@ -927,7 +919,7 @@ void Temperature::factory_reset() {
         #define PID_AUTOTUNE_MAX_CYCLE_MINS 20L
       #endif
       if ((ms - _MIN(t1, t2)) > MIN_TO_MS(PID_AUTOTUNE_MAX_CYCLE_MINS)) {
-        TERN_(DWIN_CREALITY_LCD, DWIN_Popup_Temperature(0,heater_id));
+        TERN_(DWIN_CREALITY_LCD, DWIN_Popup_Temperature(0, heater_id));
         TERN_(EXTENSIBLE_UI, ExtUI::onPIDTuning(ExtUI::pidresult_t::PID_TUNING_TIMEOUT));
         TERN_(HOST_PROMPT_SUPPORT, hostui.notify(GET_TEXT_F(MSG_PID_TIMEOUT)));
         TERN_(SOVOL_SV06_RTS, rts.gotoPageBeep(ID_KillHeat_L, ID_KillHeat_D));
@@ -938,24 +930,23 @@ void Temperature::factory_reset() {
       if (cycles > ncycles) {
         SERIAL_ECHOPGM(STR_PID_AUTOTUNE); SERIAL_ECHOLNPGM(STR_PID_AUTOTUNE_FINISHED);
         TERN_(HOST_PROMPT_SUPPORT, hostui.notify(GET_TEXT_F(MSG_PID_AUTOTUNE_DONE)));
-        HMI_flag.PID_autotune_end = true;
-        end_flag=false;
-        auto_pid.p = tune_pid.p;
-        auto_pid.i = tune_pid.i;
-        auto_pid.d = tune_pid.d;
 
-        // SERIAL_ECHOLNPGM("Raw PID settings:");
-        // SERIAL_ECHOLNPGM("P", auto_pid.p, " I", auto_pid.i, " D", auto_pid.d);
+        // E3V3SE: hand the raw result to the DWIN auto-PID result screen
+        #if ENABLED(DWIN_CREALITY_LCD)
+          HMI_flag.PID_autotune_end = true;
+          end_flag = false;
+          auto_pid.p = tune_pid.p; auto_pid.i = tune_pid.i; auto_pid.d = tune_pid.d;
+        #endif
 
         #if ANY(PIDTEMPBED, PIDTEMPCHAMBER)
-          FSTR_P const estring = PER_CBH(F("chamber"), F("bed"), FPSTR(NUL_STR));
-          say_default_(); SERIAL_ECHOLN(estring, F("Kp "), tune_pid.p);
-          say_default_(); SERIAL_ECHOLN(estring, F("Ki "), tune_pid.i);
-          say_default_(); SERIAL_ECHOLN(estring, F("Kd "), tune_pid.d);
+          FSTR_P const estring = PER_CBH(F("CHAMBER_"), F("BED_"), FPSTR(NUL_STR));
+          say_default_(); SERIAL_ECHOLN(estring, F("KP "), tune_pid.p);
+          say_default_(); SERIAL_ECHOLN(estring, F("KI "), tune_pid.i);
+          say_default_(); SERIAL_ECHOLN(estring, F("KD "), tune_pid.d);
         #else
-          say_default_(); SERIAL_ECHOLNPGM("Kp ", tune_pid.p);
-          say_default_(); SERIAL_ECHOLNPGM("Ki ", tune_pid.i);
-          say_default_(); SERIAL_ECHOLNPGM("Kd ", tune_pid.d);
+          say_default_(); SERIAL_ECHOLNPGM("KP ", tune_pid.p);
+          say_default_(); SERIAL_ECHOLNPGM("KI ", tune_pid.i);
+          say_default_(); SERIAL_ECHOLNPGM("KD ", tune_pid.d);
         #endif
 
         auto _set_hotend_pid = [](const uint8_t tool, const raw_pid_t &in_pid) {
@@ -970,31 +961,26 @@ void Temperature::factory_reset() {
           UNUSED(tool); UNUSED(in_pid);
         };
 
-        auto _set_bed_pid = [](const raw_pid_t &in_pid) {
-          #if ENABLED(PIDTEMPBED)
+        #if ENABLED(PIDTEMPBED)
+          auto _set_bed_pid = [](const raw_pid_t &in_pid) {
             temp_bed.pid.set(in_pid);
-          #endif
-          UNUSED(in_pid);
-        };
+          };
+        #endif
 
-        auto _set_chamber_pid = [](const raw_pid_t &in_pid) {
-          #if ENABLED(PIDTEMPCHAMBER)
+        #if ENABLED(PIDTEMPCHAMBER)
+          auto _set_chamber_pid = [](const raw_pid_t &in_pid) {
             temp_chamber.pid.set(in_pid);
-          #endif
-          UNUSED(in_pid);
-        };
+          };
+        #endif
 
         // Use the result? (As with "M303 U1")
-        if (set_result){
+        if (set_result) {
           SERIAL_ECHOLNPGM("Applying new PID settings.");
-          if (ischamber) _set_chamber_pid(tune_pid);
-          else if (isbed) _set_bed_pid(tune_pid);
-          else _set_hotend_pid(heater_id, tune_pid);
-        }    
+          PER_CBH(_set_chamber_pid(tune_pid), _set_bed_pid(tune_pid), _set_hotend_pid(heater_id, tune_pid));
+        }
+
         goto EXIT_M303;
       }
-
-      TERN(DWIN_CREALITY_LCD, DWIN_Update(), ui.update());
     }
 
     disable_all_heaters();
