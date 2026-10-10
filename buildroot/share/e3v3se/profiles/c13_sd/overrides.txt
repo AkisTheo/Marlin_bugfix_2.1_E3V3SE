@@ -189,7 +189,6 @@ Configuration_adv.h E BABYSTEP_INVERT_Z false
 Configuration_adv.h E BABYSTEP_MILLIMETER_UNITS
 Configuration_adv.h E BABYSTEP_MULTIPLICATOR_Z 0.01
 Configuration_adv.h E BABYSTEP_ZPROBE_OFFSET
-Configuration_adv.h E LIN_ADVANCE
 Configuration_adv.h E ADVANCE_K#2 0.0
 Configuration_adv.h E PROBING_MARGIN_LEFT PROBING_MARGIN
 Configuration_adv.h E PROBING_MARGIN_RIGHT PROBING_MARGIN+10
