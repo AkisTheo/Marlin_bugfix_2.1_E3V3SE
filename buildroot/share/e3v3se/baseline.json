@@ -32,7 +32,6 @@
     "Marlin/src/lcd/dwin/common/encoder.h",
     "Marlin/src/lcd/marlinui.cpp",
     "Marlin/src/lcd/marlinui.h",
-    "Marlin/src/lcd/menu/menu_one_click_print.cpp",
     "Marlin/src/lcd/utf8.cpp",
     "Marlin/src/module/motion.cpp",
     "Marlin/src/module/probe.h",
@@ -41,14 +40,13 @@
     "Marlin/src/module/temperature.h",
     "Marlin/src/pins/pins.h",
     "Marlin/src/sd/cardreader.cpp",
-    "Marlin/src/sd/cardreader.h",
     "README.md",
     "ini/stm32f1.ini",
     "platformio.ini"
   ],
   "build": {
     "STM32F103RET6_creality": {
-      "flash": 222388,
+      "flash": 222372,
       "ram": 30204
     }
   }
