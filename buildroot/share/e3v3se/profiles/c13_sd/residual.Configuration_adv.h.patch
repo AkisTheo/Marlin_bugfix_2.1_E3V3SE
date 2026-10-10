@@ -76,7 +76,7 @@
  #endif // FT_MOTION
  
 @@ -1308,6 +1296,7 @@
- #define INPUT_SHAPING_Y
+ //#define INPUT_SHAPING_Y
  //#define INPUT_SHAPING_Z
  #if ANY(INPUT_SHAPING_X, INPUT_SHAPING_Y, INPUT_SHAPING_Z)
 +  // #define DWIN_INPUT_SHAPING_MENU        // Enable LCD Menu to Configure Input Shaping parameters

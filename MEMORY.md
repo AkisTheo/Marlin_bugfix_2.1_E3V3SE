@@ -91,3 +91,8 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - Issue #23 comment also had LIN_ADV and STEALTHCHOP_E off; we kept them on per request. If stalls return, test with them off first.
 - Issue #23 also saw broken Z-offset after FTM: `getZOffset()` (e3v3se/AutoOffset.cpp) now runs under `FTM_DISABLE_IN_SCOPE()`.
 - Baseline: RAM 29,220 B, flash 234,668 B (47.3%, ~1.2 KB under the 46%-of-512KB cap).
+
+## Bed MINTEMP (flaky/missing bed sensor)
+- Origin: commit e10eec2d7b ("false positive thermal protection") used a function-local counter that reset every call, so bed MINTEMP effectively never fired. A later 10-sample debounce re-enabled it and halted printers with bad bed sensors.
+- Now explicit: `E3V3SE_IGNORE_BED_MINTEMP` (Configuration.h, in profile residual) skips only the bed MINTEMP check in `updateTemperaturesFromRawValues()`. BED_MAXTEMP, thermal runaway and heating-failed (WATCH_BED) protections remain active.
+- PATH `pio` (6.1.19) is stale and fails to fetch tool-scons; use `~/.platformio/penv/bin/pio` (6.2.0).

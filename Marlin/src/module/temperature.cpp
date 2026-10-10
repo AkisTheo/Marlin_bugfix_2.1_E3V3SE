@@ -2973,15 +2973,12 @@ void Temperature::updateTemperaturesFromRawValues() {
     if (TP_CMP(BED, rawBedTemp(), temp_sensor_range_bed.raw_max))
       MAXTEMP_ERROR(H_BED, temp_bed.celsius);
 
-    // E3V3SE: Debounce bed MINTEMP to avoid false positives (navaismo). Require
-    // several consecutive low readings before raising the error.
-    static uint8_t bed_low_temp_error_count = 0;
-    if (temp_bed.target > 0 && !is_bed_preheating() && TP_CMP(BED, temp_sensor_range_bed.raw_min, rawBedTemp())) {
-      if (++bed_low_temp_error_count >= 10)
+    // E3V3SE: A flaky or missing bed sensor reads as "too cold" and halts the printer, so the
+    // bed MINTEMP check is optional. Runaway / heating-failed protection are unaffected.
+    #if DISABLED(E3V3SE_IGNORE_BED_MINTEMP)
+      if (temp_bed.target > 0 && !is_bed_preheating() && TP_CMP(BED, temp_sensor_range_bed.raw_min, rawBedTemp()))
         MINTEMP_ERROR(H_BED, temp_bed.celsius);
-    }
-    else
-      bed_low_temp_error_count = 0;
+    #endif
   #endif
 
   #if ALL(HAS_HEATED_CHAMBER, THERMAL_PROTECTION_CHAMBER)

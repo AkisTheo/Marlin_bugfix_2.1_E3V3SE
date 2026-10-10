@@ -1,4 +1,4 @@
-# Define-level overrides on top of 9861a96f3b. Regenerate with: config_profile.py derive
+# Define-level overrides on top of 9861a96f3bdc11330b8ff111dc8468252e11c48a. Regenerate with: config_profile.py derive
 Configuration.h E STRING_CONFIG_H_AUTHOR "Marlin, Creality, Kraplax & Navaismo"
 Configuration.h E MOTHERBOARD BOARD_CREALITY_V3_GD303
 Configuration.h E SERIAL_PORT 1
@@ -158,7 +158,6 @@ Configuration_adv.h E BLTOUCH_DELAY 350
 Configuration_adv.h E BLTOUCH_HS_MODE true
 Configuration_adv.h E FT_MOTION
 Configuration_adv.h E FTM_IS_DEFAULT_MOTION
-Configuration_adv.h E FTM_SHAPING_DEFAULT_FREQ_X 37.0f
 Configuration_adv.h E FTM_DEFAULT_SHAPER_Y ftMotionShaper_3HEI
 Configuration_adv.h E FTM_SHAPING_DEFAULT_FREQ_Y 42.0f
 Configuration_adv.h D FTM_DIR_CHANGE_HOLD_X
