@@ -40,13 +40,14 @@
     "Marlin/src/module/temperature.h",
     "Marlin/src/pins/pins.h",
     "Marlin/src/sd/cardreader.cpp",
+    "Marlin/src/sd/cardreader.h",
     "README.md",
     "ini/stm32f1.ini",
     "platformio.ini"
   ],
   "build": {
     "STM32F103RET6_creality": {
-      "flash": 222372,
+      "flash": 222580,
       "ram": 30204
     }
   }
