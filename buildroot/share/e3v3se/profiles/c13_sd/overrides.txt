@@ -156,17 +156,15 @@ Configuration_adv.h E FAN_MIN_PWM 50
 Configuration_adv.h E E0_AUTO_FAN_PIN PC1
 Configuration_adv.h E BLTOUCH_DELAY 350
 Configuration_adv.h E BLTOUCH_HS_MODE true
+Configuration_adv.h E FT_MOTION
 Configuration_adv.h E FTM_IS_DEFAULT_MOTION
-Configuration_adv.h E FTM_DEFAULT_SHAPER_X ftMotionShaper_3HEI
-Configuration_adv.h E FTM_SHAPING_DEFAULT_FREQ_X 40.0f
+Configuration_adv.h E FTM_SHAPING_DEFAULT_FREQ_X 37.0f
 Configuration_adv.h E FTM_DEFAULT_SHAPER_Y ftMotionShaper_3HEI
 Configuration_adv.h E FTM_SHAPING_DEFAULT_FREQ_Y 42.0f
 Configuration_adv.h D FTM_DIR_CHANGE_HOLD_X
 Configuration_adv.h D FTM_DIR_CHANGE_HOLD_Y
 Configuration_adv.h D FTM_DIR_CHANGE_HOLD_Z
 Configuration_adv.h D FTM_DIR_CHANGE_HOLD_E
-Configuration_adv.h E INPUT_SHAPING_X
-Configuration_adv.h E INPUT_SHAPING_Y
 Configuration_adv.h E SHAPING_FREQ_X 42.0
 Configuration_adv.h E DEFAULT_STEPPER_TIMEOUT_SEC 1200
 Configuration_adv.h E DISABLE_IDLE_X false

@@ -1,4 +1,5 @@
 #include "AutoOffset.h"
+#include "../module/ft_motion.h"
 
 #if ENABLED(USE_AUTOZ_TOOL_2)
 
@@ -741,6 +742,8 @@ static float Multiple_Hight_At(xyz_float_t basePos, bool isRunProByPress, bool i
  */
 bool getZOffset(bool isNozzleClr, bool isRunProByPress, bool isRunProByTouch, float *outOffset)
 {
+  // The load-cell sampling needs standard stepper motion; FT Motion is restored on exit
+  TERN_(FT_MOTION, FTM_DISABLE_IN_SCOPE());
   #if ENABLED(X_ROUTINE_AUTO_OFFSET)
     SERIAL_ECHOLNPGM_P("=== Starting Get Z Offset (5 points, X Routine) ===");
   #elif ENABLED(D_ROUTINE_AUTO_OFFSET)
