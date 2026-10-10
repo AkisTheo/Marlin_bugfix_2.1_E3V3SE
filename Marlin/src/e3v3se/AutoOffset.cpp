@@ -1,5 +1,8 @@
 #include "AutoOffset.h"
-#include "../module/ft_motion.h"
+#include "../inc/MarlinConfigPre.h"
+#if ENABLED(FT_MOTION)
+  #include "../module/ft_motion.h"
+#endif
 
 #if ENABLED(USE_AUTOZ_TOOL_2)
 
