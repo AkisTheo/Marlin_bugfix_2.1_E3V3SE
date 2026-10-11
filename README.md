@@ -121,21 +121,21 @@ A profile is the difference between upstream's configuration files and the machi
 
 ```sh
 # Regenerate the profile after editing Configuration*.h by hand
-python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint derive
+python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd derive
 
 # Verify the files equal upstream + profile
-python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint check
+python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd check
 
 # Rebuild the files from upstream + profile (after taking upstream's versions)
-python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint apply
+python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd apply
 
 # List upstream options that the profile disables (review after a merge)
-python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint stale
+python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd stale
 ```
 
 Without `--profile`, the tools use the name stored in `buildroot/share/e3v3se/active_profile`.
 
-`c13_octoprint` differs from `c13_sd` only by `OCTOPRINT_PLUGIN`, `MEATPACK_ON_SERIAL_PORT_1` (on) and `ONE_CLICK_PRINT` (off).
+This branch uses the `c13_sd` profile. The `c13_octoprint` branch adds `OCTOPRINT_PLUGIN` and `MEATPACK_ON_SERIAL_PORT_1`, and turns `ONE_CLICK_PRINT` off.
 
 ## Enabling and disabling features by hand
 
