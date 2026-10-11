@@ -1,8 +1,7 @@
 name: Build E3V3SE Firmware
 
-# Run this workflow from the branch you want to build (c13_sd or c13_octoprint):
-# the committed configuration of that branch is the starting point, and the inputs below
-# only override individual feature defines for this build.
+# c13_sd branch (C13, SD card). The committed configuration of this branch is the starting
+# point, and the inputs below only override individual feature defines for this build.
 on:
   workflow_dispatch:
     inputs:
@@ -66,10 +65,6 @@ on:
         description: "DWIN_SKEW_MENU (requires SKEW_CORRECTION)"
         type: boolean
         default: false
-      octoprint_plugin:
-        description: "OCTOPRINT_PLUGIN (c13_octoprint branch only)"
-        type: boolean
-        default: false
       meatpack:
         description: "MEATPACK_ON_SERIAL_PORT_1 (host transmission compression)"
         type: boolean
@@ -110,7 +105,6 @@ jobs:
             DWIN_CUSTOM_EXTRUDE=${{ inputs.dwin_custom_extrude }} \
             SKEW_CORRECTION=${{ inputs.skew_correction }} \
             DWIN_SKEW_MENU=${{ inputs.dwin_skew_menu }} \
-            OCTOPRINT_PLUGIN=${{ inputs.octoprint_plugin }} \
             MEATPACK_ON_SERIAL_PORT_1=${{ inputs.meatpack }}
 
       - name: Compile firmware
