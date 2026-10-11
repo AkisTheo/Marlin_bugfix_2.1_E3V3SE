@@ -12,6 +12,7 @@ The goal of this repository is simple: **pull upstream Marlin at any time withou
 - [Branches](#branches)
 - [Project structure](#project-structure)
 - [Configuration profiles](#configuration-profiles)
+- [Enabling and disabling features by hand](#enabling-and-disabling-features-by-hand)
 - [Guardrails](#guardrails)
 - [Merging upstream](#merging-upstream)
 - [Host (OctoPrint) integration](#host-octoprint-integration)
@@ -134,6 +135,48 @@ python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint stale
 Without `--profile`, the tools use the name stored in `buildroot/share/e3v3se/active_profile`.
 
 `c13_octoprint` differs from `c13_sd` only by `OCTOPRINT_PLUGIN`, `MEATPACK_ON_SERIAL_PORT_1` (on) and `ONE_CLICK_PRINT` (off).
+
+## Enabling and disabling features by hand
+
+Features are plain Marlin defines. To toggle one, edit `Marlin/Configuration.h` or `Marlin/Configuration_adv.h`, then record the change in the profile so it survives the next upstream merge.
+
+1. **Edit the define.** Comment it out (`//#define FEATURE`) to disable it, or remove the `//` to enable it. Options that carry a value keep it on the same line.
+2. **Regenerate the profile** for the branch you are on:
+   ```sh
+   python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd derive
+   python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd check
+   ```
+3. **Build and check size**, then commit and run the guardrails:
+   ```sh
+   pio run -e STM32F103RET6_creality
+   python3 buildroot/share/e3v3se/check_profile.py build
+   ```
+4. If flash or RAM grew on purpose, update the baseline with `check_profile.py build --update` after reviewing the change.
+
+Skipping step 2 is the usual cause of a failing `config` guardrail, because the profile no longer matches the files.
+
+Some options depend on others. For example, `ONE_CLICK_PRINT` requires `NO_SD_AUTOSTART` (set automatically inside its own block) and is incompatible with `BROWSE_MEDIA_ON_INSERT`; the build stops with a sanity-check message if a dependency is missing.
+
+### Common switches
+
+| Feature | Define | File |
+| --- | --- | --- |
+| Thumbnail rendering | `DWIN_RENDER_THUMBNAIL` | `Configuration.h` |
+| One-click print | `ONE_CLICK_PRINT` | `Configuration_adv.h` |
+| Auto Z-offset, delta (4 points) | `D_ROUTINE_AUTO_OFFSET` | `Configuration.h` |
+| Auto Z-offset, X (5 points) | `X_ROUTINE_AUTO_OFFSET` | `Configuration.h` |
+| FT_Motion and input shaping | `FT_MOTION` | `Configuration_adv.h` |
+| Linear Advance | `LIN_ADVANCE` | `Configuration_adv.h` |
+| Brightness and dimmer menu | `DWIN_DIMM_MENU` | `Configuration.h` |
+| Z height after homing menu | `DWIN_ZHOME_MENU` | `Configuration.h` |
+| Custom extrude menu | `DWIN_CUSTOM_EXTRUDE` | `Configuration.h` |
+| Extra preheat labels | `EXTRA_PREHEAT_LABELS` | `Configuration.h` |
+| Input shaping menu | `DWIN_INPUT_SHAPING_MENU` | `Configuration_adv.h` |
+| Filament runout sensor | `FILAMENT_RUNOUT_SENSOR` | `Configuration.h` |
+| OctoPrint plugin layer | `OCTOPRINT_PLUGIN` | `Configuration.h` (`c13_octoprint` only) |
+| MeatPack on serial port 1 | `MEATPACK_ON_SERIAL_PORT_1` | `Configuration_adv.h` (on in `c13_octoprint`) |
+
+The table lists switches, not a statement of the current state; check the define in the file to see whether it is on in your branch. Some menu options depend on a base feature (for example the input shaping menu needs `FT_MOTION` or the legacy shapers).
 
 ## Guardrails
 
