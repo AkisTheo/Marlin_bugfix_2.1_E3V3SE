@@ -13,6 +13,7 @@ The goal of this repository is simple: **pull upstream Marlin at any time withou
 - [Project structure](#project-structure)
 - [Configuration profiles](#configuration-profiles)
 - [Enabling and disabling features by hand](#enabling-and-disabling-features-by-hand)
+- [Input shaping with FT_Motion (`M493`)](#input-shaping-with-ft_motion-m493)
 - [Guardrails](#guardrails)
 - [Merging upstream](#merging-upstream)
 - [Host (OctoPrint) integration](#host-octoprint-integration)
@@ -177,6 +178,30 @@ Some options depend on others. For example, `ONE_CLICK_PRINT` requires `NO_SD_AU
 | MeatPack on serial port 1 | `MEATPACK_ON_SERIAL_PORT_1` | `Configuration_adv.h` (on in `c13_octoprint`) |
 
 The table lists switches, not a statement of the current state; check the define in the file to see whether it is on in your branch. Some menu options depend on a base feature (for example the input shaping menu needs `FT_MOTION` or the legacy shapers).
+
+## Input shaping with FT_Motion (`M493`)
+
+Input shaping uses the **FT_Motion advanced shapers** (`FTM_SHAPER_*`), not the legacy `INPUT_SHAPING_X/Y` feature, which stays off. All shaper types are compiled in, and the shapers are configured at runtime with `M493`, so no LCD menu is needed (the LCD menu `DWIN_INPUT_SHAPING_MENU` is a separate, later step).
+
+| Command | Effect |
+| --- | --- |
+| `M493` | Report the current FT_Motion and shaper settings |
+| `M493 S1` / `M493 S0` | Enable / disable Fixed-Time Motion |
+| `M493 X C<mode> A<Hz>` | Shaper mode and frequency for X |
+| `M493 Y C<mode> A<Hz>` | Shaper mode and frequency for Y |
+| `M493 X Y I<zeta> Q<vtol>` | Damping ratio and vibration tolerance (EI-family shapers) |
+
+Modes for `C`: `0` None, `1` ZV, `2` ZVD, `3` ZVDD, `4` ZVDDD, `5` EI, `6` 2HEI, `7` 3HEI, `8` MZV. Set the mode for every axis you want shaped, then save with `M500`.
+
+Example: 3-hump EI at 42 Hz on Y and ZV at 37 Hz on X.
+
+```gcode
+M493 Y C7 A42
+M493 X C1 A37
+M500
+```
+
+Factory defaults: X none at 37 Hz, Y 3HEI at 42 Hz. To change them, edit `FTM_DEFAULT_SHAPER_*` and `FTM_SHAPING_DEFAULT_FREQ_*` in `Configuration_adv.h` and follow the profile steps above.
 
 ## Guardrails
 
