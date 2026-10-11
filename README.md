@@ -28,6 +28,53 @@ Previous versions of this fork edited upstream files directly (the DWIN UI, head
 2. **Fork code lives in fork-owned paths.** Custom features are implemented in `Marlin/src/e3v3se/` and `Marlin/src/lcd/dwin/creality/` and are compiled through the PlatformIO source filter.
 3. **Configuration is derived, not hand-merged.** `Configuration.h` and `Configuration_adv.h` equal pristine upstream plus a profile (define overrides and small residual patches).
 
+### How the pieces fit together
+
+```mermaid
+flowchart TB
+    subgraph UP["Upstream Marlin (bugfix-2.1.x) - merged as-is"]
+        UCFG["Configuration.h / Configuration_adv.h<br/>(pristine)"]
+        UCORE["Core: gcode, planner, stepper,<br/>temperature, pause, settings"]
+        UHAL["HAL / pins / sanity checks"]
+    end
+
+    subgraph PROF["Config profile (buildroot/share/e3v3se/profiles)"]
+        OVR["overrides.txt<br/>define states"]
+        RES["residual.*.patch<br/>fork-only options"]
+    end
+
+    subgraph FORK["Fork-owned code"]
+        E3["Marlin/src/e3v3se/<br/>AutoOffset, ThumbRender, OctoHost"]
+        DWIN["Marlin/src/lcd/dwin/creality/<br/>DWIN UI for the V3 SE"]
+    end
+
+    subgraph GUARD["Guardrails (check_profile.py)"]
+        GB["boundary: upstream-file edits must not grow"]
+        GC["config: files = upstream + profile"]
+        GS["build: RAM / flash baseline"]
+    end
+
+    UCFG --> APPLY(["config_profile.py apply / derive"])
+    OVR --> APPLY
+    RES --> APPLY
+    APPLY --> CFG["Machine Configuration*.h"]
+
+    CFG --> BUILD(["PlatformIO build<br/>source filter in platformio.ini"])
+    UCORE -- "few-line hooks" --> E3
+    UCORE -- "hooks" --> DWIN
+    UCORE --> BUILD
+    UHAL --> BUILD
+    E3 --> BUILD
+    DWIN --> BUILD
+    BUILD --> FW["Firmware (C13 SD / C13 OctoPrint)"]
+
+    GB -. checks .-> UCORE
+    GC -. checks .-> CFG
+    GS -. checks .-> FW
+```
+
+Upstream code flows in untouched, the machine configuration is generated from it, and all fork behavior enters through a small number of hooks into fork-owned folders. The guardrails verify each of those three boundaries on every change.
+
 ## Branches
 
 | Branch | Hardware | Purpose |
