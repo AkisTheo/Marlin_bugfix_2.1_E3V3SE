@@ -343,6 +343,16 @@
   #define THERMAL_PROTECTION_BED_HYSTERESIS     2 // (°C)
 
   /**
+   * E3V3SE_IGNORE_BED_MINTEMP may be enabled in Configuration.h when the
+   * bed sensor is intermittent or absent. It suppresses only the BED_MINTEMP
+   * shutdown. BED_MAXTEMP, thermal runaway, and heating-failed protection
+   * remain enabled.
+   *
+   * Do not enable this option when the bed sensor is required for safe
+   * operation. A missing or disconnected sensor can otherwise go unnoticed.
+   */
+
+  /**
    * As described above, except for the bed (M140/M190/M303).
    */
   #define WATCH_BED_TEMP_PERIOD                180 // (seconds)

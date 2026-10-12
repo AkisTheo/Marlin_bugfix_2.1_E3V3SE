@@ -255,6 +255,16 @@ The `c13_octoprint` profile enables the host layer in `Marlin/src/e3v3se/OctoHos
 - `M115` or `M9000 A1` marks the host as connected. `HOST_LINK_UP()` then enables host prompts for pause, resume and filament change; without the plugin, stock upstream behavior is kept.
 - MeatPack is enabled and the emergency parser is kept in sync with it, so `M876`, `M108` and `M410` keep working.
 
+## Bed minimum-temperature safety override
+
+The C13 profiles enable `E3V3SE_IGNORE_BED_MINTEMP` in `Configuration.h` for
+machines with an intermittent or missing bed sensor. This suppresses only the
+bed `MINTEMP` shutdown. `BED_MAXTEMP`, thermal runaway protection, and the bed
+heating-failed (`WATCH_BED`) protection remain active.
+
+This override should not be enabled when the bed sensor is required for safe
+operation. A disconnected sensor can otherwise go unnoticed.
+
 ## Building
 
 PlatformIO is the build system. Use a recent PlatformIO Core (6.2 or newer).
