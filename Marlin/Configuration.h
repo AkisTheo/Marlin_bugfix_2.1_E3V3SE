@@ -2684,7 +2684,7 @@
   #define PREHEAT_4_FAN_SPEED    0//255 // Value from 0 to 255
 #endif
 
-//  #define PREHEAT_ALERT           // Enable an alert when preheating is complete
+#define PREHEAT_ALERT           // Enable an alert when preheating is complete
 // #define DWIN_CUSTOM_EXTRUDE     // Enable LCD Menu for Custom Extrude Functions
 
 /**
